@@ -44,6 +44,15 @@ resource "aws_dynamodb_table" "basic-dynamodb-table" {
   read_capacity  = var.provisioned_capacity == null ? null : var.provisioned_capacity.read
   write_capacity = var.provisioned_capacity == null ? null : var.provisioned_capacity.write
 
+  point_in_time_recovery {
+    enabled = var.point_in_time_recovery_enabled
+  }
+
+  server_side_encryption {
+    enabled     = true
+    kms_key_arn = aws_kms_key.key.arn
+  }
+
   dynamic "global_secondary_index" {
     for_each = local.gsi_map
     iterator = each
