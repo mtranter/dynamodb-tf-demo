@@ -1,25 +1,29 @@
 module "dynamo_table" {
   source         = "./module"
   name           = "LeanKeyValueStore"
-  billing_mode   = "PROVISIONED"
-  read_capacity  = 5
-  write_capacity = 5
-  hash_key       = "TenantId"
-  range_key      = "EntityId"
-  global_secondary_indexes = [{
-    name      = "IxByUserId"
-    hash_key  = "UserId"
-    range_key = "TenantId"
-  }]
-  attributes = [{
+  provisioned_capacity = {
+    read = 5
+    write = 5
+  }
+  hash_key = {
     name = "TenantId"
     type = "S"
-    }, {
-    name = "EntityId",
+  }
+  range_key = {
+    name = "EntityId"
     type = "S"
-    }, {
-    name = "UserId",
-    type = "S"
+  }
+
+  global_secondary_indexes = [{
+    name = "IxByUserId"
+    hash_key = {
+      name = "UserId"
+      type = "S"
+    }
+    range_key = {
+      name = "TenantId"
+      type = "S"
+    }
   }]
   tags = {
     Environment = "Prod"

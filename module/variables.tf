@@ -4,33 +4,50 @@ variable "name" {
   type = string
 }
 
-variable "billing_mode" {
-  type = string
+variable "provisioned_capacity" {
+  type = object({
+    read  = number
+    write = number
+  })
+  default     = null
+  description = <<EOF
+The provisioned capacity for this table. e.g. 
+provisioned_capacity = {
+  read = 1
+  write = 1
 }
-
-variable "read_capacity" {
-  type = number
-}
-
-variable "write_capacity" {
-  type = number
+EOF
 }
 
 variable "hash_key" {
-  type = string
+  type = object({
+    name = string
+    type = string
+  })
+
+  description = <<EOF
+The hash key definition for this table. e.g.
+hash_key = {
+  name = "id"
+  type = "S"
+}
+EOF
 }
 
 variable "range_key" {
-  type = string
+  type = object({
+    name = string
+    type = string
+  })
+  default     = null
+  description = <<EOF
+The range key definition for this table. e.g.
+range_key = {
+  name = "id"
+  type = "S"
 }
-
-variable "attributes" {
-  type = set(object({
-      name = string
-      type = string
-  }))
+EOF
 }
-
 
 variable "local_secondary_indexes" {
   default = []
@@ -61,10 +78,18 @@ variable "global_secondary_indexes" {
   default = []
   type = set(object({
     name = string
-    read_capacity = optional(number)
-    write_capacity = optional(number)
-    hash_key = string
-    range_key = string
+    provisioned_capacity = optional(object({
+      read_capacity  = number
+      write_capacity = number
+    }))
+    hash_key = object({
+      name = string
+      type = string
+    })
+    range_key = optional(object({
+      name = string
+      type = string
+    }))
     projection_type    = optional(string)
     non_key_attributes = optional(list(string))
   }))

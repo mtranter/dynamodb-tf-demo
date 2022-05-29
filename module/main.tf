@@ -2,30 +2,64 @@ terraform {
   experiments = [module_variable_optional_attrs]
 }
 
+locals {
+  key_attributes = [
+    for k in [var.hash_key, var.range_key] : {
+      name = k.name
+      type = k.type
+    } if k != null
+  ]
+  gsi_attributes = flatten([
+    for gi in var.global_secondary_indexes : [
+      for k in [gi.hash_key, gi.range_key] : {
+        name = k.name
+        type = k.type
+      } if k != null
+    ]
+    ]
+  )
+  lsi_attributes = flatten([
+    for li in var.local_secondary_indexes : [{
+      name = li.range_key.name
+      type = li.range_key.type
+    }]
+  ])
+
+  lsi_map = {
+    for k in var.local_secondary_indexes : k.name => k
+  }
+
+  gsi_map = {
+    for k in var.global_secondary_indexes : k.name => k
+  }
+
+  attributes = { for a in toset(concat(local.key_attributes, local.gsi_attributes, local.lsi_attributes)) : a.name => a.type }
+}
+
 resource "aws_dynamodb_table" "basic-dynamodb-table" {
   name           = var.name
-  billing_mode   = var.billing_mode
-  read_capacity  = var.read_capacity
-  write_capacity = var.write_capacity
-  hash_key       = var.hash_key
-  range_key      = var.range_key
+  billing_mode   = var.provisioned_capacity == null ? "PAY_PER_REQUEST" : "PROVISIONED"
+  hash_key       = var.hash_key.name
+  range_key      = var.range_key == null ? null : var.range_key.name
+  read_capacity  = var.provisioned_capacity == null ? null : var.provisioned_capacity.read
+  write_capacity = var.provisioned_capacity == null ? null : var.provisioned_capacity.write
 
   dynamic "global_secondary_index" {
-    for_each = var.global_secondary_indexes
+    for_each = local.gsi_map
     iterator = each
     content {
       name               = each.value.name
-      write_capacity     = each.value.write_capacity
-      read_capacity      = each.value.read_capacity
-      hash_key           = each.value.hash_key
-      range_key          = each.value.range_key
+      write_capacity     = each.value.provisioned_capacity == null ? null : each.value.provisioned_capacity.write
+      read_capacity      = each.value.provisioned_capacity == null ? null : each.value.provisioned_capacity.read
+      hash_key           = each.value.hash_key.name
+      range_key          = each.value.range_key.name
       projection_type    = coalesce(each.value.projection_type, "ALL")
       non_key_attributes = each.value.non_key_attributes == null ? [] : each.value.non_key_attributes
     }
   }
 
   dynamic "local_secondary_index" {
-    for_each = var.local_secondary_indexes
+    for_each = local.lsi_map
     iterator = each
     content {
       name               = each.value.name
@@ -36,12 +70,12 @@ resource "aws_dynamodb_table" "basic-dynamodb-table" {
   }
 
   dynamic "attribute" {
-    for_each = var.attributes
+    for_each = local.attributes
     content {
-      name = attribute.value.name
-      type = attribute.value.type
+      name = attribute.key
+      type = attribute.value
     }
   }
 
-  tags = var.tags 
+  tags = var.tags
 }
