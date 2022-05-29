@@ -1,27 +1,6 @@
-
-
 variable "name" {
-  type = string
-}
-
-variable "point_in_time_recovery_enabled" {
-  type = bool
-  default = true
-}
-
-variable "provisioned_capacity" {
-  type = object({
-    read  = number
-    write = number
-  })
-  default     = null
-  description = <<EOF
-The provisioned capacity for this table. e.g. 
-provisioned_capacity = {
-  read = 1
-  write = 1
-}
-EOF
+  type        = string
+  description = "The name of this DynamoDB Table"
 }
 
 variable "hash_key" {
@@ -54,6 +33,57 @@ range_key = {
 EOF
 }
 
+variable "stream_enabled" {
+  type        = bool
+  default     = false
+  description = "Enable DynamoDB Streams for this table"
+}
+
+variable "stream_view_type" {
+  type        = string
+  default     = "NEW_AND_OLD_IMAGES"
+  description = <<EOF
+The stream view type for this table if streams are enabled.
+Valid values are: NEW_IMAGE | OLD_IMAGE | NEW_AND_OLD_IMAGES | KEYS_ONLY
+See here for more info: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_StreamSpecification.html
+EOF
+}
+
+variable "provisioned_capacity" {
+  type = object({
+    read  = number
+    write = number
+  })
+  default     = null
+  description = <<EOF
+The provisioned capacity for this table. e.g. 
+provisioned_capacity = {
+  read = 1
+  write = 1
+}
+EOF
+}
+
+variable "ttl_attribute" {
+  default     = null
+  type        = string
+  description = <<EOF
+The attribute to use as the TTL for data in this table
+EOF
+}
+
+variable "tags" {
+  type        = map(string)
+  default     = {}
+  description = "The tags to be added to this table"
+}
+
+variable "point_in_time_recovery_enabled" {
+  type        = bool
+  default     = true
+  description = "Enable Point-In-Time recovery on this table"
+}
+
 variable "local_secondary_indexes" {
   default = []
   type = set(object({
@@ -84,8 +114,8 @@ variable "global_secondary_indexes" {
   type = set(object({
     name = string
     provisioned_capacity = optional(object({
-      read_capacity  = number
-      write_capacity = number
+      read  = number
+      write = number
     }))
     hash_key = object({
       name = string
@@ -108,9 +138,11 @@ local_secondary_indexes = [{
   }
   hash_key = {
     name = "orderId"
+    type = "S"
   }
   range_key = {
     name = "productId"
+    type = "S"
   }
   projection_type = "INCLUDE" //Optional. Defaults to ALL
   non_key_attributes = ["sku", "price", "description"] //Required if projection_type = "INCLUDE"
@@ -118,10 +150,6 @@ local_secondary_indexes = [{
 EOF
 }
 
-
-variable "tags" {
-  type = map(string)
-}
 
 variable "alert_config" {
   type = object({
