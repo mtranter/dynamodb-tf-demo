@@ -4,6 +4,11 @@ variable "name" {
   type = string
 }
 
+variable "point_in_time_recovery_enabled" {
+  type = bool
+  default = true
+}
+
 variable "provisioned_capacity" {
   type = object({
     read  = number
