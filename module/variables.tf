@@ -4,6 +4,11 @@ variable "name" {
   type = string
 }
 
+variable "point_in_time_recovery_enabled" {
+  type = bool
+  default = true
+}
+
 variable "provisioned_capacity" {
   type = object({
     read  = number
@@ -116,4 +121,33 @@ EOF
 
 variable "tags" {
   type = map(string)
+}
+
+variable "alert_config" {
+  type = object({
+    on_conditional_check_failed_per_minute = optional(number)
+    on_read_throttles_per_minute           = optional(number)
+    on_write_throttles_per_minute          = optional(number)
+    on_failed_to_replicate                 = optional(bool)
+    on_system_errors                       = optional(bool)
+    on_transaction_conflict_per_minute     = optional(number)
+
+  })
+  default = {
+    on_conditional_check_failed_per_minute = null
+    on_read_throttles_per_minute           = null
+    on_write_throttles_per_minute          = null
+    on_system_errors                       = true
+    on_transaction_conflict_per_minute     = null
+  }
+  description = <<EOF
+Configuration for Cloudwatch alarms. e.g
+alert_config = {
+    on_conditional_check_failed_per_minute = null
+    on_read_throttles_per_minute           = 10
+    on_write_throttles_per_minute          = 5
+    on_system_errors                       = true
+    on_transaction_conflict_per_minute     = null
+}
+EOF
 }
